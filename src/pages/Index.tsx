@@ -3,8 +3,23 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 
+interface Product {
+  id: number;
+  title: string;
+  category: string;
+  price: number;
+  image: string;
+  description: string;
+}
+
+interface CartItem extends Product {
+  quantity: number;
+}
+
 const Index = () => {
   const [currentPage, setCurrentPage] = useState('home');
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   const categories = [
     {
@@ -33,6 +48,110 @@ const Index = () => {
     }
   ];
 
+  const products: Product[] = [
+    {
+      id: 1,
+      title: 'Пуговицы золотые металлические',
+      category: 'Пуговицы',
+      price: 450,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/f6f08868-f7da-436b-bf3a-460227a098f4.jpg',
+      description: 'Премиальные золотые пуговицы для костюмов и пальто'
+    },
+    {
+      id: 2,
+      title: 'Пуговицы перламутровые',
+      category: 'Пуговицы',
+      price: 320,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/f6f08868-f7da-436b-bf3a-460227a098f4.jpg',
+      description: 'Элегантные перламутровые пуговицы для рубашек'
+    },
+    {
+      id: 3,
+      title: 'Молнии потайные 20см',
+      category: 'Молнии',
+      price: 180,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/31d5a395-e104-449c-a06f-26f6cc2a3bd5.jpg',
+      description: 'Незаметные молнии для платьев и юбок'
+    },
+    {
+      id: 4,
+      title: 'Молнии металлические разъемные',
+      category: 'Молнии',
+      price: 380,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/31d5a395-e104-449c-a06f-26f6cc2a3bd5.jpg',
+      description: 'Прочные металлические молнии для курток'
+    },
+    {
+      id: 5,
+      title: 'Нитки полиэстер набор 10 катушек',
+      category: 'Нитки',
+      price: 890,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/4ee5daba-c556-4733-bf40-9d48c31415df.jpg',
+      description: 'Профессиональные нитки для любых типов тканей'
+    },
+    {
+      id: 6,
+      title: 'Нитки для вышивки мулине',
+      category: 'Нитки',
+      price: 650,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/4ee5daba-c556-4733-bf40-9d48c31415df.jpg',
+      description: 'Яркие нитки для декоративной вышивки'
+    },
+    {
+      id: 7,
+      title: 'Кнопки металлические 15мм',
+      category: 'Фурнитура',
+      price: 280,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/739a4f37-11e5-4607-b2b1-9179fe83c426.jpg',
+      description: 'Надежные кнопки для одежды и аксессуаров'
+    },
+    {
+      id: 8,
+      title: 'Крючки и петли для одежды',
+      category: 'Фурнитура',
+      price: 220,
+      image: 'https://cdn.poehali.dev/projects/502a5c65-214d-45a4-8252-28e3c34b8c91/files/739a4f37-11e5-4607-b2b1-9179fe83c426.jpg',
+      description: 'Классическая застежка для платьев и юбок'
+    }
+  ];
+
+  const addToCart = (product: Product) => {
+    setCart((prevCart) => {
+      const existingItem = prevCart.find(item => item.id === product.id);
+      if (existingItem) {
+        return prevCart.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prevCart, { ...product, quantity: 1 }];
+    });
+  };
+
+  const removeFromCart = (productId: number) => {
+    setCart((prevCart) => prevCart.filter(item => item.id !== productId));
+  };
+
+  const updateQuantity = (productId: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
+    setCart((prevCart) =>
+      prevCart.map(item =>
+        item.id === productId ? { ...item, quantity: newQuantity } : item
+      )
+    );
+  };
+
+  const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const filteredProducts = selectedCategory
+    ? products.filter(p => p.category === selectedCategory)
+    : products;
+
   const navigationItems = [
     { id: 'home', label: 'Главная', icon: 'Home' },
     { id: 'catalog', label: 'Каталог', icon: 'Grid3x3' },
@@ -52,14 +171,22 @@ const Index = () => {
               {navigationItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setCurrentPage(item.id)}
-                  className={`text-sm transition-colors ${
+                  onClick={() => {
+                    setCurrentPage(item.id);
+                    setSelectedCategory(null);
+                  }}
+                  className={`text-sm transition-colors relative ${
                     currentPage === item.id
                       ? 'text-[#0A4DA6] font-medium'
                       : 'text-[#424245] hover:text-[#1D1D1F]'
                   }`}
                 >
                   {item.label}
+                  {item.id === 'cart' && cartItemsCount > 0 && (
+                    <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#0A4DA6] text-white text-xs rounded-full flex items-center justify-center">
+                      {cartItemsCount}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -163,26 +290,77 @@ const Index = () => {
       {currentPage === 'catalog' && (
         <section className="pt-32 pb-20 px-6 lg:px-[10%]">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-5xl font-semibold text-[#1D1D1F] mb-6">Каталог</h1>
-            <p className="text-xl text-[#424245] mb-12">Выберите категорию фурнитуры</p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {categories.map((category) => (
-                <Card
-                  key={category.title}
-                  className="p-10 bg-white hover:shadow-xl transition-all duration-300 border-0 cursor-pointer"
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-5xl font-semibold text-[#1D1D1F] mb-2">Каталог</h1>
+                <p className="text-xl text-[#424245]">
+                  {selectedCategory || 'Все товары'}
+                </p>
+              </div>
+              {selectedCategory && (
+                <Button
+                  variant="ghost"
+                  onClick={() => setSelectedCategory(null)}
+                  className="text-[#424245]"
                 >
-                  <div className="mb-6 w-16 h-16 rounded-2xl bg-[#0A4DA6]/10 flex items-center justify-center">
-                    <Icon name={category.icon} size={32} className="text-[#0A4DA6]" />
+                  ← Все категории
+                </Button>
+              )}
+            </div>
+
+            {!selectedCategory && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                {categories.map((category) => (
+                  <Card
+                    key={category.title}
+                    onClick={() => setSelectedCategory(category.title)}
+                    className="p-8 bg-white hover:shadow-xl transition-all duration-300 border-0 cursor-pointer"
+                  >
+                    <div className="mb-6 w-16 h-16 rounded-2xl bg-[#0A4DA6]/10 flex items-center justify-center">
+                      <Icon name={category.icon} size={32} className="text-[#0A4DA6]" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-[#1D1D1F] mb-2">
+                      {category.title}
+                    </h3>
+                    <p className="text-sm text-[#424245]">
+                      {products.filter(p => p.category === category.title).length} товаров
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => (
+                <Card
+                  key={product.id}
+                  className="overflow-hidden bg-white border-0 hover:shadow-xl transition-all duration-300"
+                >
+                  <div className="aspect-square overflow-hidden bg-[#F5F5F7]">
+                    <img
+                      src={product.image}
+                      alt={product.title}
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
                   </div>
-                  <h3 className="text-2xl font-semibold text-[#1D1D1F] mb-3">
-                    {category.title}
-                  </h3>
-                  <p className="text-[#424245] mb-4">
-                    {category.description}
-                  </p>
-                  <Button variant="ghost" className="text-[#0A4DA6] p-0 h-auto hover:bg-transparent">
-                    Подробнее →
-                  </Button>
+                  <div className="p-6">
+                    <div className="text-sm text-[#424245] mb-2">{product.category}</div>
+                    <h3 className="text-xl font-semibold text-[#1D1D1F] mb-2">
+                      {product.title}
+                    </h3>
+                    <p className="text-sm text-[#424245] mb-4">{product.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="text-2xl font-semibold text-[#1D1D1F]">
+                        {product.price} ₽
+                      </div>
+                      <Button
+                        onClick={() => addToCart(product)}
+                        className="bg-[#0A4DA6] hover:bg-[#083A7E] text-white rounded-xl"
+                      >
+                        В корзину
+                      </Button>
+                    </div>
+                  </div>
                 </Card>
               ))}
             </div>
@@ -192,18 +370,86 @@ const Index = () => {
 
       {currentPage === 'cart' && (
         <section className="pt-32 pb-20 px-6 lg:px-[10%]">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="w-24 h-24 rounded-full bg-[#F5F5F7] flex items-center justify-center mx-auto mb-6">
-              <Icon name="ShoppingCart" size={48} className="text-[#424245]" />
-            </div>
-            <h1 className="text-5xl font-semibold text-[#1D1D1F] mb-4">Корзина пуста</h1>
-            <p className="text-xl text-[#424245] mb-8">Добавьте товары из каталога</p>
-            <Button 
-              onClick={() => setCurrentPage('catalog')}
-              className="bg-[#0A4DA6] hover:bg-[#083A7E] text-white rounded-xl px-7 py-6 text-base"
-            >
-              Перейти в каталог
-            </Button>
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-5xl font-semibold text-[#1D1D1F] mb-12">Корзина</h1>
+            
+            {cart.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-24 h-24 rounded-full bg-[#F5F5F7] flex items-center justify-center mx-auto mb-6">
+                  <Icon name="ShoppingCart" size={48} className="text-[#424245]" />
+                </div>
+                <h2 className="text-3xl font-semibold text-[#1D1D1F] mb-4">Корзина пуста</h2>
+                <p className="text-xl text-[#424245] mb-8">Добавьте товары из каталога</p>
+                <Button 
+                  onClick={() => setCurrentPage('catalog')}
+                  className="bg-[#0A4DA6] hover:bg-[#083A7E] text-white rounded-xl px-7 py-6 text-base"
+                >
+                  Перейти в каталог
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-4 mb-8">
+                  {cart.map((item) => (
+                    <Card key={item.id} className="p-6 bg-white border-0">
+                      <div className="flex items-center gap-6">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="w-24 h-24 object-cover rounded-xl"
+                        />
+                        <div className="flex-1">
+                          <h3 className="text-xl font-semibold text-[#1D1D1F] mb-1">
+                            {item.title}
+                          </h3>
+                          <p className="text-sm text-[#424245]">{item.category}</p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-3 bg-[#F5F5F7] rounded-xl px-3 py-2">
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              className="text-[#424245] hover:text-[#1D1D1F] w-6 h-6 flex items-center justify-center"
+                            >
+                              <Icon name="Minus" size={16} />
+                            </button>
+                            <span className="text-[#1D1D1F] font-medium w-8 text-center">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              className="text-[#424245] hover:text-[#1D1D1F] w-6 h-6 flex items-center justify-center"
+                            >
+                              <Icon name="Plus" size={16} />
+                            </button>
+                          </div>
+                          <div className="text-xl font-semibold text-[#1D1D1F] w-28 text-right">
+                            {item.price * item.quantity} ₽
+                          </div>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="text-[#424245] hover:text-red-500 transition-colors"
+                          >
+                            <Icon name="Trash2" size={20} />
+                          </button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                <Card className="p-8 bg-white border-0">
+                  <div className="flex items-center justify-between mb-6">
+                    <span className="text-2xl font-semibold text-[#1D1D1F]">Итого:</span>
+                    <span className="text-3xl font-semibold text-[#1D1D1F]">
+                      {cartTotal} ₽
+                    </span>
+                  </div>
+                  <Button className="w-full bg-[#0A4DA6] hover:bg-[#083A7E] text-white rounded-xl py-6 text-base">
+                    Оформить заказ
+                  </Button>
+                </Card>
+              </>
+            )}
           </div>
         </section>
       )}
